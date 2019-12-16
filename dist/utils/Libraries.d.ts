@@ -1,13 +1,13 @@
 import { ForgeVersion, MinecraftVersion } from "./Versions";
 import { ClientOptions } from "../app";
-import { MinecraftArtifact } from "./Manifests";
+import { MinecraftArtifact, Rule, Arguments } from "./Manifests";
 import { AuthenticationResult } from "./Authentication";
 import { InstallationProgress } from "./InstallationProgress";
 export declare class LibraryManager {
     options: ClientOptions;
     version: MinecraftVersion;
     mainClass: string;
-    minecraftArguments: string;
+    arguments: Arguments;
     versionType: string;
     assetIndex: string;
     classpath: string[];
@@ -16,6 +16,7 @@ export declare class LibraryManager {
     installForgeLibraries(version: ForgeVersion, progress: InstallationProgress): Promise<void>;
     unpackNatives(version: MinecraftVersion): Promise<string>;
     getClasspath(): string;
+    getJavaArguments(nativeDir: string): string[];
     getLaunchArguments(auth: AuthenticationResult): string[];
 }
 export declare type MinecraftLibrary = {
@@ -38,10 +39,3 @@ export declare type MinecraftLibrary = {
     };
     rules?: [Rule];
 };
-declare type Rule = {
-    action: 'allow' | 'disallow';
-    os?: {
-        name: 'osx' | 'linux' | 'windows';
-    };
-};
-export {};

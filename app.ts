@@ -27,12 +27,12 @@ export class MinecraftClient {
     options: ClientOptions;
     forge: ForgeVersion;
 
+    nativeDir: string;
+
     progress: InstallationProgress;
 
     libraryManager: LibraryManager;
     assetManager: AssetManager;
-
-    nativeDir: string;
 
     private constructor(version: MinecraftVersion, forge?: ForgeVersion, options: ClientOptions = MinecraftClient.defaultConfig, progress?: InstallationProgress) {
         for(let i in MinecraftClient.defaultConfig)
@@ -51,7 +51,8 @@ export class MinecraftClient {
     }
 
     private static readonly defaultConfig: ClientOptions = {
-        javaExecutable: 'java'
+        javaExecutable: 'java',
+        features: {}
     };
 
     public static getMinecraftClient(version: string | MinecraftVersion, options: ClientOptions, progress?: InstallationProgress): Promise<MinecraftClient | null> {
@@ -148,27 +149,23 @@ export class MinecraftClient {
         this.progress.call(1);
     }
 
-    public async launch(auth: AuthenticationResult, redirectOutput?: boolean, javaArguments?: string[]): Promise<child_process.ChildProcess> {
+    public async launch(auth: AuthenticationResult, redirectOutput?: boolean): Promise<child_process.ChildProcess> {
         this.nativeDir = await this.libraryManager.unpackNatives(this.version);
-        let args: string[] = [];
 
-        if(javaArguments)
-            args.push(...(javaArguments));
-
-        args.push(`-Djava.library.path=${this.nativeDir}`);
-        args.push('-cp');
-        let classpath: string = this.libraryManager.getClasspath();
-        args.push(classpath);
-
-        args.push(...this.libraryManager.getLaunchArguments(auth));
+        const args: string[] = [
+            ...this.libraryManager.getJavaArguments(this.nativeDir),
+            ...this.libraryManager.getLaunchArguments(auth)
+        ];
 
         let cp: child_process.ChildProcess = child_process.spawn(this.options.javaExecutable, args, {
             cwd: this.options.gameDir
         });
+
         if(redirectOutput) {
             cp.stdout.pipe(process.stdout);
             cp.stderr.pipe(process.stderr);
         }
+
         return cp;
     }
 
@@ -176,5 +173,13 @@ export class MinecraftClient {
 
 export declare type ClientOptions = {
     gameDir?: string,
-    javaExecutable?: string
+    javaExecutable?: string,
+    features?: {
+        redirect_output?: boolean,
+        has_custom_resoution?: number[],
+        custom_server?: {
+            host: string,
+            port: number
+        }
+    }
 }

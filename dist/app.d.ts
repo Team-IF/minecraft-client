@@ -16,10 +16,10 @@ export declare class MinecraftClient {
     version: MinecraftVersion;
     options: ClientOptions;
     forge: ForgeVersion;
+    nativeDir: string;
     progress: InstallationProgress;
     libraryManager: LibraryManager;
     assetManager: AssetManager;
-    nativeDir: string;
     private constructor();
     private static readonly defaultConfig;
     static getMinecraftClient(version: string | MinecraftVersion, options: ClientOptions, progress?: InstallationProgress): Promise<MinecraftClient | null>;
@@ -27,9 +27,17 @@ export declare class MinecraftClient {
     static getClient(version: string | MinecraftVersion, forge: ForgeVersionType | ForgeVersionDescription, options: ClientOptions, progress?: InstallationProgress): Promise<MinecraftClient | null>;
     checkInstallation(): Promise<void>;
     checkMods(mods: ForgeMod[], exclusive: boolean): Promise<void>;
-    launch(auth: AuthenticationResult, redirectOutput?: boolean, javaArguments?: string[]): Promise<child_process.ChildProcess>;
+    launch(auth: AuthenticationResult, redirectOutput?: boolean): Promise<child_process.ChildProcess>;
 }
 export declare type ClientOptions = {
     gameDir?: string;
     javaExecutable?: string;
+    features?: {
+        redirect_output?: boolean;
+        has_custom_resoution?: number[];
+        custom_server?: {
+            host: string;
+            port: number;
+        };
+    };
 };

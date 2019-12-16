@@ -9,7 +9,15 @@ import * as path from 'path';
 import * as tmp from './TempHelper';
 
 import {Endpoints, Utils} from "./Constants";
-import {ForgeLibrary, ForgeLibraryManifest, MinecraftArtifact, MinecraftLibraryManifest} from "./Manifests";
+import {
+    ForgeLibrary,
+    ForgeLibraryManifest,
+    MinecraftArtifact,
+    MinecraftLibraryManifest,
+    Rule,
+    Arguments,
+    ConditionedValue
+} from "./Manifests";
 import {AuthenticationResult} from "./Authentication";
 import {InstallationProgress} from "./InstallationProgress";
 
@@ -21,7 +29,7 @@ export class LibraryManager {
     public version: MinecraftVersion;
 
     public mainClass: string;
-    public minecraftArguments: string;
+    public arguments: Arguments;
 
     public versionType: string;
 
@@ -35,7 +43,11 @@ export class LibraryManager {
 
         this.classpath = [];
 
-        this.minecraftArguments = "";
+        this.arguments = {
+            game: [],
+            jvm: []
+        };
+
         this.mainClass = "";
 
         this.versionType = "";
@@ -49,11 +61,11 @@ export class LibraryManager {
             progress.call(i/data.libraries.length);
 
             let lib = data.libraries[i];
-            if(!LibraryHelper.applyRules(lib.rules)) {
+            if(!LibraryHelper.applyRules(lib.rules, this.options)) {
                 continue;
             }
 
-            if(lib.downloads.artifact) {
+            if(lib.downloads.artifact && !lib.natives) {
                 let dest: string = path.join(this.options.gameDir, 'libraries', lib.downloads.artifact.path);
                 mkdir(path.join(dest, '..'));
 
@@ -69,7 +81,7 @@ export class LibraryManager {
                 let classifier: string = lib.natives[Utils.platform];
                 let artifact: MinecraftArtifact = lib.downloads.classifiers[classifier];
 
-                if(!artifact.path)
+                if(!artifact || !artifact.path)
                     continue;
 
                 //natives to classpath?
@@ -84,17 +96,15 @@ export class LibraryManager {
         }
         let client: MinecraftArtifact = data.downloads.client;
 
-        this.classpath.push(`versions/${this.version.id}/${this.version.id}.jar`);
+        this.classpath.push(`${this.options.gameDir}/versions/${this.version.id}/${this.version.id}.jar`);
 
         await Downloader.checkOrDownload(client.url, client.sha1, path.join(this.options.gameDir, 'versions', this.version.id, this.version.id + '.jar'));
 
         progress.call(1);
 
         this.mainClass = data.mainClass;
-        this.minecraftArguments = data.minecraftArguments;
-
+        this.arguments = data.arguments;
         this.versionType = data.type;
-
         this.assetIndex = data.assets;
     }
 
@@ -157,7 +167,7 @@ export class LibraryManager {
         await Downloader.checkOrDownload(version.universal, sha1, dest);
         progress.call(1);
         this.mainClass = libraries.versionInfo.mainClass;
-        this.minecraftArguments = libraries.versionInfo.minecraftArguments;
+        this.arguments = libraries.versionInfo.arguments;
 
         this.versionType = 'ignored';
     }
@@ -167,7 +177,7 @@ export class LibraryManager {
         let data: MinecraftLibraryManifest = await version.getLibraryManifest();
         for(let i = 0; i < data.libraries.length; i++) {
             let lib: MinecraftLibrary = data.libraries[i];
-            if(!LibraryHelper.applyRules(lib.rules))
+            if(!LibraryHelper.applyRules(lib.rules, this.options))
                 continue;
             if(!lib.natives)
                 continue;
@@ -193,22 +203,51 @@ export class LibraryManager {
         return this.classpath.join(Utils.classpathSeparator);
     }
 
+    public getJavaArguments(nativeDir: string): string[] {
+        let args = this.arguments.jvm
+            .filter((item: any) => LibraryHelper.applyRules(item.rules, this.options))
+            .map((item: any) => item.value || item)
+            .join(' ')
+
+        args = args.replace("${natives_directory}", nativeDir)
+        args = args.replace("${launcher_name}", "null") // TODO: Add these params?
+        args = args.replace("${launcher_version}", "null") // TODO: Add these params?
+        args = args.replace("${classpath}", this.getClasspath())
+
+        const unreplacedVars = args.match(/\${.*}/)
+        if (unreplacedVars) {
+            throw new Error(`Unreplaced java variable found "${unreplacedVars[0]}"`)
+        }
+
+        return [...args.split(' '), this.mainClass]
+    }
+
     //--username ${auth_player_name} --version ${version_name} --gameDir ${game_directory} --assetsDir ${assets_root} --assetIndex ${assets_index_name} --uuid ${auth_uuid} --accessToken ${auth_access_token} --userType ${user_type} --tweakClass net.minecraftforge.fml.common.launcher.FMLTweaker --versionType Forge
     //--username ${auth_player_name} --version ${version_name} --gameDir ${game_directory} --assetsDir ${assets_root} --assetIndex ${assets_index_name} --uuid ${auth_uuid} --accessToken ${auth_access_token} --userType ${user_type} --versionType ${version_type}
 
     public getLaunchArguments(auth: AuthenticationResult): string[] {
-        let args: string = this.minecraftArguments;
-        args = args.replace("${auth_player_name}", auth.name);
-        args = args.replace("${version_name}", this.version.id);
-        args = args.replace("${game_directory}", this.options.gameDir);
-        args = args.replace("${assets_root}", path.join(this.options.gameDir, 'assets'));
-        args = args.replace("${assets_index_name}", this.assetIndex);
-        args = args.replace("${auth_uuid}", auth.uuid);
-        args = args.replace("${auth_access_token}", auth.token || "null");
-        args = args.replace("${user_type}", "mojang");
-        args = args.replace("${version_type}", this.versionType);
-        args = args.replace("${user_properties}", "{}");
-        return [this.mainClass].concat(args.split(" "));
+        let args = this.arguments.game
+            .filter((item: any) => LibraryHelper.applyRules(item.rules, this.options))
+            .map((item: any) => item.value || item)
+            .join(' ')
+            
+        args = args.replace("${auth_player_name}", auth.name)
+        args = args.replace("${version_name}", this.version.id)
+        args = args.replace("${game_directory}", this.options.gameDir)
+        args = args.replace("${assets_root}", path.join(this.options.gameDir, 'assets'))
+        args = args.replace("${assets_index_name}", this.assetIndex)
+        args = args.replace("${auth_uuid}", auth.uuid)
+        args = args.replace("${auth_access_token}", auth.token || "null")
+        args = args.replace("${user_type}", "mojang")
+        args = args.replace("${version_type}", this.versionType)
+        args = args.replace("${user_properties}", "{}")
+
+        const unreplacedVars = args.match(/\${.*}/)
+        if (unreplacedVars) {
+            throw new Error(`Unreplaced game variable found "${unreplacedVars[0]}"`)
+        }
+
+        return args.split(' ')
     }
 
 }
@@ -236,17 +275,19 @@ export declare type MinecraftLibrary = {
 
 class LibraryHelper {
 
-    public static applyRules(rules: Rule[]): boolean {//true: download; false: ignore;
-        if(!rules)
-            return true;
+    public static applyRules(rules: Rule[], options?: ClientOptions): boolean {
+        if(!rules) return true;
         let result: boolean = false;
         for(let i = 0; i < rules.length; i++) {
             let rule = rules[i];
             if(rule.os) {
                 if (rule.os.name === Utils.platform)
                     result = rule.action === "allow";
-            } else
+            } else if (rule.features) {
+                result = Object.keys(rule.features).filter(key => options.features[key]).length > 0
+            } else {
                 result = rule.action === "allow";
+            }
         }
         return result;
     }
@@ -264,11 +305,4 @@ class LibraryHelper {
         return `${pkg}/${artifact}/${version}/${artifact}-${version}.jar`;
     }
 
-}
-
-declare type Rule = {
-    action: 'allow' | 'disallow',
-    os?: {
-        name: 'osx' | 'linux' | 'windows'
-    }
 }

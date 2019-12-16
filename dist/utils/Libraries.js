@@ -13,7 +13,10 @@ class LibraryManager {
         this.options = options;
         this.version = version;
         this.classpath = [];
-        this.minecraftArguments = "";
+        this.arguments = {
+            game: [],
+            jvm: []
+        };
         this.mainClass = "";
         this.versionType = "";
         this.assetIndex = "";
@@ -23,10 +26,10 @@ class LibraryManager {
         for (let i = 0; i < data.libraries.length; i++) {
             progress.call(i / data.libraries.length);
             let lib = data.libraries[i];
-            if (!LibraryHelper.applyRules(lib.rules)) {
+            if (!LibraryHelper.applyRules(lib.rules, this.options)) {
                 continue;
             }
-            if (lib.downloads.artifact) {
+            if (lib.downloads.artifact && !lib.natives) {
                 let dest = path.join(this.options.gameDir, 'libraries', lib.downloads.artifact.path);
                 mkdir(path.join(dest, '..'));
                 this.classpath.push(dest);
@@ -35,7 +38,7 @@ class LibraryManager {
             if (lib.natives) {
                 let classifier = lib.natives[Constants_1.Utils.platform];
                 let artifact = lib.downloads.classifiers[classifier];
-                if (!artifact.path)
+                if (!artifact || !artifact.path)
                     continue;
                 //natives to classpath?
                 let p = path.join(this.options.gameDir, 'libraries', artifact.path);
@@ -43,11 +46,11 @@ class LibraryManager {
             }
         }
         let client = data.downloads.client;
-        this.classpath.push(`versions/${this.version.id}/${this.version.id}.jar`);
+        this.classpath.push(`${this.options.gameDir}/versions/${this.version.id}/${this.version.id}.jar`);
         await Downloader_1.default.checkOrDownload(client.url, client.sha1, path.join(this.options.gameDir, 'versions', this.version.id, this.version.id + '.jar'));
         progress.call(1);
         this.mainClass = data.mainClass;
-        this.minecraftArguments = data.minecraftArguments;
+        this.arguments = data.arguments;
         this.versionType = data.type;
         this.assetIndex = data.assets;
     }
@@ -107,7 +110,7 @@ class LibraryManager {
         await Downloader_1.default.checkOrDownload(version.universal, sha1, dest);
         progress.call(1);
         this.mainClass = libraries.versionInfo.mainClass;
-        this.minecraftArguments = libraries.versionInfo.minecraftArguments;
+        this.arguments = libraries.versionInfo.arguments;
         this.versionType = 'ignored';
     }
     async unpackNatives(version) {
@@ -115,7 +118,7 @@ class LibraryManager {
         let data = await version.getLibraryManifest();
         for (let i = 0; i < data.libraries.length; i++) {
             let lib = data.libraries[i];
-            if (!LibraryHelper.applyRules(lib.rules))
+            if (!LibraryHelper.applyRules(lib.rules, this.options))
                 continue;
             if (!lib.natives)
                 continue;
@@ -137,10 +140,28 @@ class LibraryManager {
         return files.join(Utils.classpathSeparator);*/
         return this.classpath.join(Constants_1.Utils.classpathSeparator);
     }
+    getJavaArguments(nativeDir) {
+        let args = this.arguments.jvm
+            .filter((item) => LibraryHelper.applyRules(item.rules, this.options))
+            .map((item) => item.value || item)
+            .join(' ');
+        args = args.replace("${natives_directory}", nativeDir);
+        args = args.replace("${launcher_name}", "null"); // TODO: Add these params?
+        args = args.replace("${launcher_version}", "null"); // TODO: Add these params?
+        args = args.replace("${classpath}", this.getClasspath());
+        const unreplacedVars = args.match(/\${.*}/);
+        if (unreplacedVars) {
+            throw new Error(`Unreplaced java variable found "${unreplacedVars[0]}"`);
+        }
+        return [...args.split(' '), this.mainClass];
+    }
     //--username ${auth_player_name} --version ${version_name} --gameDir ${game_directory} --assetsDir ${assets_root} --assetIndex ${assets_index_name} --uuid ${auth_uuid} --accessToken ${auth_access_token} --userType ${user_type} --tweakClass net.minecraftforge.fml.common.launcher.FMLTweaker --versionType Forge
     //--username ${auth_player_name} --version ${version_name} --gameDir ${game_directory} --assetsDir ${assets_root} --assetIndex ${assets_index_name} --uuid ${auth_uuid} --accessToken ${auth_access_token} --userType ${user_type} --versionType ${version_type}
     getLaunchArguments(auth) {
-        let args = this.minecraftArguments;
+        let args = this.arguments.game
+            .filter((item) => LibraryHelper.applyRules(item.rules, this.options))
+            .map((item) => item.value || item)
+            .join(' ');
         args = args.replace("${auth_player_name}", auth.name);
         args = args.replace("${version_name}", this.version.id);
         args = args.replace("${game_directory}", this.options.gameDir);
@@ -151,12 +172,16 @@ class LibraryManager {
         args = args.replace("${user_type}", "mojang");
         args = args.replace("${version_type}", this.versionType);
         args = args.replace("${user_properties}", "{}");
-        return [this.mainClass].concat(args.split(" "));
+        const unreplacedVars = args.match(/\${.*}/);
+        if (unreplacedVars) {
+            throw new Error(`Unreplaced game variable found "${unreplacedVars[0]}"`);
+        }
+        return args.split(' ');
     }
 }
 exports.LibraryManager = LibraryManager;
 class LibraryHelper {
-    static applyRules(rules) {
+    static applyRules(rules, options) {
         if (!rules)
             return true;
         let result = false;
@@ -166,8 +191,12 @@ class LibraryHelper {
                 if (rule.os.name === Constants_1.Utils.platform)
                     result = rule.action === "allow";
             }
-            else
+            else if (rule.features) {
+                result = Object.keys(rule.features).filter(key => options.features[key]).length > 0;
+            }
+            else {
                 result = rule.action === "allow";
+            }
         }
         return result;
     }

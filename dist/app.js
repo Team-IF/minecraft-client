@@ -102,16 +102,12 @@ class MinecraftClient {
         }
         this.progress.call(1);
     }
-    async launch(auth, redirectOutput, javaArguments) {
+    async launch(auth, redirectOutput) {
         this.nativeDir = await this.libraryManager.unpackNatives(this.version);
-        let args = [];
-        if (javaArguments)
-            args.push(...(javaArguments));
-        args.push(`-Djava.library.path=${this.nativeDir}`);
-        args.push('-cp');
-        let classpath = this.libraryManager.getClasspath();
-        args.push(classpath);
-        args.push(...this.libraryManager.getLaunchArguments(auth));
+        const args = [
+            ...this.libraryManager.getJavaArguments(this.nativeDir),
+            ...this.libraryManager.getLaunchArguments(auth)
+        ];
         let cp = mz_1.child_process.spawn(this.options.javaExecutable, args, {
             cwd: this.options.gameDir
         });
@@ -123,7 +119,8 @@ class MinecraftClient {
     }
 }
 MinecraftClient.defaultConfig = {
-    javaExecutable: 'java'
+    javaExecutable: 'java',
+    features: {}
 };
 exports.MinecraftClient = MinecraftClient;
 //# sourceMappingURL=app.js.map

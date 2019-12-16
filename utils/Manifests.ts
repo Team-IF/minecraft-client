@@ -22,6 +22,26 @@ export declare type ForgeVersionManifest = {
     webpath: string
 }
 
+export declare type Rule = {
+    action: 'allow' | 'disallow',
+    os?: {
+        name: 'osx' | 'linux' | 'windows'
+    },
+    features?: {
+        has_custom_resolution?: boolean,
+        is_demo_user?: boolean
+    }
+}
+
+export declare type ConditionedValue = {
+    rules: Rule[],
+    value: string | string[]
+}
+
+export declare type Arguments = {
+    game: (string | ConditionedValue)[],
+    jvm: (string | ConditionedValue)[]
+}
 
 export declare type MinecraftLibraryManifest = {
     assetIndex: MinecraftArtifact,
@@ -33,13 +53,14 @@ export declare type MinecraftLibraryManifest = {
     id: string,
     libraries: [MinecraftLibrary],
     mainClass: string,
-    minecraftArguments: string,
+    arguments: Arguments,
     minimumLauncherVersion: number,
     releaseTime: Date,
     time: Date,
 
     type: 'release' | 'snapshot'
 }
+
 export declare type ForgeLibraryManifest = {
     install: {
         profileName: string,
@@ -58,8 +79,11 @@ export declare type ForgeLibraryManifest = {
         time: Date,
         releaseTime: Date,
         type: string,
-        minecraftArguments: string,
         mainClass: string,
+        arguments: {
+            game: string[],
+            jvm: string[]
+        },
         inheritsFrom: string,
         jar: string
         logging: object,
