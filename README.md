@@ -5,27 +5,27 @@
 ## Usage
 
 ```js
-import {MinecraftClient} from 'minecraft-client';
+import {MinecraftClient} from '@eneris/minecraft-client';
 
 //Vanilla Minecraft Client
-let client: MinecraftClient = await MinecraftClient.getMinecraftClient("1.12.2", {
+let client: MinecraftClient = await MinecraftClient.getMinecraftClient("1.15", {
     gameDir: '/home/username/.minecraft'
 });
 
 //Forge Minecraft Client with promoted Version
-let client: MinecraftClient = await MinecraftClient.getForgeClient("1.12.2", "recommended", {
+let client: MinecraftClient = await MinecraftClient.getForgeClient("1.15", "recommended", {
     gameDir: '/home/username/.minecraft'
 });
 
 //Forge Minecraft Client with custom Version
-let client: MinecraftClient = await MinecraftClient.getForgeClient("1.12.2", "14.23.4.2709", {
+let client: MinecraftClient = await MinecraftClient.getForgeClient("1.15", "14.23.4.2709", {
     gameDir: '/home/username/.minecraft'
 });
 
-import {InstallationProgress} from 'minecraft-client';
+import {InstallationProgress} from '@eneris/minecraft-client';
 
 //Vanilla Minecraft Client with Progress Callback
-let client: MinecraftClient = await MinecraftClient.getMinecraftClient("1.12.2", {
+let client: MinecraftClient = await MinecraftClient.getMinecraftClient("1.15", {
     gameDir: '/home/username/.minecraft'
 }, InstallationProgress.callback(currentStep => {
     //Step Callback
@@ -42,7 +42,7 @@ Valid Forge version types:
 ### Authentication
 
 ```js
-import {Authentication} from 'minecraft-client';
+import {Authentication} from '@eneris/minecraft-client';
 
 //This is required to download all the Libraries and assets
 await client.checkInstallation();
@@ -60,7 +60,7 @@ client.launch(await Authentication.refresh("accessToken"));
 ### Mods
 
 ```js
-import {CurseForgeMod, CustomForgeMod, ForgeMod} from 'minecraft-client';
+import {CurseForgeMod, CustomForgeMod, ForgeMod} from '@eneris/minecraft-client';
 
 //List Mods
 let mods: ForgeMod[] = [

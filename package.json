@@ -1,17 +1,16 @@
 {
-  "name": "minecraft-client",
-  "version": "2.6.2",
+  "name": "@eneris/minecraft-client",
+  "version": "3.0.0",
   "description": "",
   "main": "dist/app.js",
   "types": "dist/app.d.ts",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node dist/app",
-    "compile": "tsc"
+    "compile": "tsc",
+    "postinstall": "npm run compile"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/NobodyMiner/minecraft-client.git"
+    "url": "git+https://github.com/Eneris/minecraft-client.git"
   },
   "keywords": [
     "minecraft",
@@ -22,19 +21,20 @@
   "author": "fixed_",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/NobodyMiner/minecraft-client/issues"
+    "url": "https://github.com/Eneris/minecraft-client/issues"
   },
-  "homepage": "https://github.com/NobodyMiner/minecraft-client#readme",
+  "homepage": "https://github.com/Eneris/minecraft-client#readme",
   "devDependencies": {
     "@types/mz": "0.0.32",
-    "@types/node-fetch": "^2.1.2",
-    "@types/unzipper": "^0.9.0"
+    "@types/node": "^12.12.18",
+    "@types/node-fetch": "^2.5.4",
+    "@types/unzipper": "^0.9.2"
   },
   "dependencies": {
     "mkdirp": "^0.5.1",
     "mz": "^2.7.0",
-    "node-fetch": "^2.2.0",
-    "typescript": "^3.1.2",
-    "unzipper": "^0.9.3"
+    "node-fetch": "^2.6.0",
+    "typescript": "^3.7.3",
+    "unzipper": "^0.9.15"
   }
 }
