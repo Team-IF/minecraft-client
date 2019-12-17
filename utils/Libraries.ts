@@ -68,8 +68,8 @@ export class LibraryManager {
             if(lib.downloads.artifact && !lib.natives) {
                 let dest: string = path.join(this.options.gameDir, 'libraries', lib.downloads.artifact.path);
                 mkdir(path.join(dest, '..'));
-
-                this.classpath.push(dest);
+                
+                this.classpath.push(path.join('libraries', lib.downloads.artifact.path));
 
                 await Downloader.checkOrDownload(
                     lib.downloads.artifact.url,
@@ -96,7 +96,7 @@ export class LibraryManager {
         }
         let client: MinecraftArtifact = data.downloads.client;
 
-        this.classpath.push(`${this.options.gameDir}/versions/${this.version.id}/${this.version.id}.jar`);
+        this.classpath.push(`versions/${this.version.id}/${this.version.id}.jar`);
 
         await Downloader.checkOrDownload(client.url, client.sha1, path.join(this.options.gameDir, 'versions', this.version.id, this.version.id + '.jar'));
 

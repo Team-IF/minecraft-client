@@ -22,5 +22,4 @@ export class Utils {
                 return process.platform;
         }
     }
-
 }
