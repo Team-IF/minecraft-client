@@ -1,12 +1,13 @@
 {
   "name": "@eneris/minecraft-client",
-  "version": "3.0.0",
+  "version": "3.0.4",
   "description": "",
   "main": "dist/app.js",
   "types": "dist/app.d.ts",
   "scripts": {
     "compile": "tsc",
-    "postinstall": "npm run compile"
+    "postinstall": "npm run compile",
+    "prepublish": "rm -rf dist && npm run compile"
   },
   "repository": {
     "type": "git",
