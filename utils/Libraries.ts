@@ -69,7 +69,7 @@ export class LibraryManager {
                 let dest: string = path.join(this.options.gameDir, 'libraries', lib.downloads.artifact.path);
                 mkdir(path.join(dest, '..'));
                 
-                this.classpath.push(path.join('libraries', lib.downloads.artifact.path));
+                this.classpath.push(path.resolve(dest));
 
                 await Downloader.checkOrDownload(
                     lib.downloads.artifact.url,
@@ -96,7 +96,7 @@ export class LibraryManager {
         }
         let client: MinecraftArtifact = data.downloads.client;
 
-        this.classpath.push(`versions/${this.version.id}/${this.version.id}.jar`);
+        this.classpath.push(path.resolve(`${this.options.gameDir}/versions/${this.version.id}/${this.version.id}.jar`));
 
         await Downloader.checkOrDownload(client.url, client.sha1, path.join(this.options.gameDir, 'versions', this.version.id, this.version.id + '.jar'));
 
@@ -233,7 +233,7 @@ export class LibraryManager {
             
         args = args.replace("${auth_player_name}", auth.name)
         args = args.replace("${version_name}", this.version.id)
-        args = args.replace("${game_directory}", this.options.gameDir)
+        args = args.replace("${game_directory}", path.resolve(this.options.gameDir))
         args = args.replace("${assets_root}", path.join(this.options.gameDir, 'assets'))
         args = args.replace("${assets_index_name}", this.assetIndex)
         args = args.replace("${auth_uuid}", auth.uuid)
