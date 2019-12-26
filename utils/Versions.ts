@@ -41,8 +41,7 @@ export class ForgeVersion {
 
     public static async getPromotedVersion(version: MinecraftVersion | string, type: ForgeVersionType): Promise<ForgeVersion | null> {
         let res: fetch.Response = await fetch.default(Endpoints.FORGE_VERSION_MANIFEST);
-        let data: Buffer = await res.buffer();
-        let manifest: ForgeVersionManifest = JSON.parse(data.toString());
+        let manifest: ForgeVersionManifest = await res.json();
 
         let id: string;
         if(typeof version === 'string')
@@ -58,8 +57,7 @@ export class ForgeVersion {
 
     public static async getVersions(): Promise<ForgeVersion[]> {
         let res: fetch.Response = await fetch.default(Endpoints.FORGE_VERSION_MANIFEST);
-        let data: Buffer = await res.buffer();
-        let manifest: ForgeVersionManifest = JSON.parse(data.toString());
+        let manifest: ForgeVersionManifest = await res.json();
         let keys: string[] = Object.keys(manifest.number);
         let result: ForgeVersion[] = [];
         for(let i = 0; i < keys.length; i++) {
@@ -144,8 +142,7 @@ export class MinecraftVersion {
 
     public static async getVersions(type?: MinecraftVersionType): Promise<MinecraftVersion[]> {
         let res: fetch.Response = await fetch.default(Endpoints.VERSION_MANIFEST);
-        let data: Buffer = await res.buffer();
-        let manifest: MinecraftVersionManifest = JSON.parse(data.toString());
+        let manifest: MinecraftVersionManifest = await res.json();
         if(!type)
             return manifest.versions;
         else {
