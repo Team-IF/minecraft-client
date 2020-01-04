@@ -1,5 +1,5 @@
 import {ForgeVersion, MinecraftVersion} from "./Versions";
-import {ClientOptions} from "../app";
+import {ClientOptions, LaunchOptions} from "../app";
 import Downloader from "./Downloader";
 
 import * as unzipper from 'unzipper';
@@ -203,7 +203,7 @@ export class LibraryManager {
         return this.classpath.join(Utils.classpathSeparator);
     }
 
-    public getJavaArguments(nativeDir: string): string[] {
+    public getJavaArguments(nativeDir: string, launchOptions: LaunchOptions): string[] {
         let args = this.arguments.jvm
             .filter((item: any) => LibraryHelper.applyRules(item.rules, this.options))
             .map((item: any) => item.value || item)
@@ -213,6 +213,10 @@ export class LibraryManager {
         args = args.replace("${launcher_name}", "null") // TODO: Add these params?
         args = args.replace("${launcher_version}", "null") // TODO: Add these params?
         args = args.replace("${classpath}", this.getClasspath())
+
+        if (launchOptions.memory) {
+            args = args + ` -Xmx${launchOptions.memory} -Xms${launchOptions.memory}`
+        }
 
         const unreplacedVars = args.match(/\${.*}/)
         if (unreplacedVars) {
@@ -225,7 +229,7 @@ export class LibraryManager {
     //--username ${auth_player_name} --version ${version_name} --gameDir ${game_directory} --assetsDir ${assets_root} --assetIndex ${assets_index_name} --uuid ${auth_uuid} --accessToken ${auth_access_token} --userType ${user_type} --tweakClass net.minecraftforge.fml.common.launcher.FMLTweaker --versionType Forge
     //--username ${auth_player_name} --version ${version_name} --gameDir ${game_directory} --assetsDir ${assets_root} --assetIndex ${assets_index_name} --uuid ${auth_uuid} --accessToken ${auth_access_token} --userType ${user_type} --versionType ${version_type}
 
-    public getLaunchArguments(auth: AuthenticationResult): string[] {
+    public getLaunchArguments(auth: AuthenticationResult, launchOptions: LaunchOptions): string[] {
         let args = this.arguments.game
             .filter((item: any) => LibraryHelper.applyRules(item.rules, this.options))
             .map((item: any) => item.value || item)
@@ -241,6 +245,15 @@ export class LibraryManager {
         args = args.replace("${user_type}", "mojang")
         args = args.replace("${version_type}", this.versionType)
         args = args.replace("${user_properties}", "{}")
+
+        // Patch missing known arguments
+        if (launchOptions.resolution) {
+            args += ` --width ${launchOptions.resolution.width} --height ${launchOptions.resolution.height}`
+        }
+
+        if (launchOptions.server) {
+            args += ` --server ${launchOptions.server.host} --port ${launchOptions.server.port || 25565}`
+        }
 
         const unreplacedVars = args.match(/\${.*}/)
         if (unreplacedVars) {
@@ -284,7 +297,7 @@ class LibraryHelper {
                 if (rule.os.name === Utils.platform)
                     result = rule.action === "allow";
             } else if (rule.features) {
-                result = Object.keys(rule.features).filter(key => options.features[key]).length > 0
+                result = Object.keys(rule.features || {}).filter(key => options.features && options.features[key]).length > 0
             } else {
                 result = rule.action === "allow";
             }

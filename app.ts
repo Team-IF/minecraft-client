@@ -149,38 +149,49 @@ export class MinecraftClient {
         this.progress.call(1);
     }
 
-    public async launch(auth: AuthenticationResult, redirectOutput?: boolean): Promise<child_process.ChildProcess> {
+    public async launch(auth: AuthenticationResult, launchOptions: LaunchOptions = {}): Promise<child_process.ChildProcess> {
         this.nativeDir = await this.libraryManager.unpackNatives(this.version);
 
         const args: string[] = [
-            ...this.libraryManager.getJavaArguments(this.nativeDir),
-            ...this.libraryManager.getLaunchArguments(auth)
+            ...this.libraryManager.getJavaArguments(this.nativeDir, launchOptions),
+            ...this.libraryManager.getLaunchArguments(auth, launchOptions)
         ];
+
+        console.log(args)
 
 
         let cp: child_process.ChildProcess = child_process.spawn(this.options.javaExecutable, args, {
             cwd: this.options.gameDir
         });
 
-        if(redirectOutput) {
+        if(launchOptions.redirectOutput) {
             cp.stdout.pipe(process.stdout);
             cp.stderr.pipe(process.stderr);
         }
 
         return cp;
     }
-
 }
 
 export declare type ClientOptions = {
     gameDir?: string,
     javaExecutable?: string,
     features?: {
-        redirect_output?: boolean,
-        has_custom_resoution?: number[],
-        custom_server?: {
-            host: string,
-            port: number
-        }
+        is_demo_user?: boolean
+        has_custom_resolution?: boolean,
+        has_custom_server?: boolean
     }
+}
+
+export declare type LaunchOptions = {
+    redirectOutput?: boolean,
+    resolution?: {
+        width: number,
+        height: number
+    },
+    server?: {
+        host: string,
+        port: number
+    },
+    memory?: string
 }
