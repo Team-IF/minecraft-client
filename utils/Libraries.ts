@@ -206,24 +206,23 @@ export class LibraryManager {
     public getJavaArguments(nativeDir: string, launchOptions: LaunchOptions): string[] {
         let args = this.arguments.jvm
             .filter((item: any) => LibraryHelper.applyRules(item.rules, this.options))
-            .map((item: any) => item.value || item)
-            .join(' ')
-
-        args = args.replace("${natives_directory}", nativeDir)
-        args = args.replace("${launcher_name}", "null") // TODO: Add these params?
-        args = args.replace("${launcher_version}", "null") // TODO: Add these params?
-        args = args.replace("${classpath}", this.getClasspath())
+            .map((item: any) => String(item.value || item)
+                .replace("${natives_directory}", nativeDir)
+                .replace("${launcher_name}", "null")
+                .replace("${launcher_version}", "null")
+                .replace("${classpath}", this.getClasspath())
+            )
 
         if (launchOptions.memory) {
-            args = args + ` -Xmx${launchOptions.memory} -Xms${launchOptions.memory}`
+            args.push(` -Xmx${launchOptions.memory} -Xms${launchOptions.memory}`)
         }
 
-        const unreplacedVars = args.match(/\${.*}/)
+        const unreplacedVars = args.filter(item => item.match(/\${.*}/))
         if (unreplacedVars) {
             throw new Error(`Unreplaced java variable found "${unreplacedVars[0]}"`)
         }
 
-        return [...args.split(' '), this.mainClass]
+        return [...args, this.mainClass]
     }
 
     //--username ${auth_player_name} --version ${version_name} --gameDir ${game_directory} --assetsDir ${assets_root} --assetIndex ${assets_index_name} --uuid ${auth_uuid} --accessToken ${auth_access_token} --userType ${user_type} --tweakClass net.minecraftforge.fml.common.launcher.FMLTweaker --versionType Forge
@@ -232,35 +231,34 @@ export class LibraryManager {
     public getLaunchArguments(auth: AuthenticationResult, launchOptions: LaunchOptions): string[] {
         let args = this.arguments.game
             .filter((item: any) => LibraryHelper.applyRules(item.rules, this.options))
-            .map((item: any) => item.value || item)
-            .join(' ')
+            .map((item: any) => String(item.value || item)
+                .replace("${auth_player_name}", auth.name)
+                .replace("${version_name}", this.version.id)
+                .replace("${game_directory}", path.resolve(this.options.gameDir))
+                .replace("${assets_root}", path.join(path.resolve(this.options.gameDir), 'assets'))
+                .replace("${assets_index_name}", this.assetIndex)
+                .replace("${auth_uuid}", auth.uuid)
+                .replace("${auth_access_token}", auth.token || "null")
+                .replace("${user_type}", "mojang")
+                .replace("${version_type}", this.versionType)
+                .replace("${user_properties}", "{}")
+            )
             
-        args = args.replace("${auth_player_name}", auth.name)
-        args = args.replace("${version_name}", this.version.id)
-        args = args.replace("${game_directory}", path.resolve(this.options.gameDir))
-        args = args.replace("${assets_root}", path.join(path.resolve(this.options.gameDir), 'assets'))
-        args = args.replace("${assets_index_name}", this.assetIndex)
-        args = args.replace("${auth_uuid}", auth.uuid)
-        args = args.replace("${auth_access_token}", auth.token || "null")
-        args = args.replace("${user_type}", "mojang")
-        args = args.replace("${version_type}", this.versionType)
-        args = args.replace("${user_properties}", "{}")
-
         // Patch missing known arguments
         if (launchOptions.resolution) {
-            args += ` --width ${launchOptions.resolution.width} --height ${launchOptions.resolution.height}`
+            args.push(` --width ${launchOptions.resolution.width} --height ${launchOptions.resolution.height}`)
         }
 
         if (launchOptions.server) {
-            args += ` --server ${launchOptions.server.host} --port ${launchOptions.server.port || 25565}`
+            args.push(` --server ${launchOptions.server.host} --port ${launchOptions.server.port || 25565}`)
         }
 
-        const unreplacedVars = args.match(/\${.*}/)
+        const unreplacedVars = args.filter(item => item.match(/\${.*}/))
         if (unreplacedVars) {
             throw new Error(`Unreplaced game variable found "${unreplacedVars[0]}"`)
         }
 
-        return args.split(' ')
+        return args
     }
 
 }

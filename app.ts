@@ -157,9 +157,6 @@ export class MinecraftClient {
             ...this.libraryManager.getLaunchArguments(auth, launchOptions)
         ];
 
-        console.log(args)
-
-
         let cp: child_process.ChildProcess = child_process.spawn(this.options.javaExecutable, args, {
             cwd: this.options.gameDir
         });
