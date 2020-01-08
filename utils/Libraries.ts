@@ -214,11 +214,11 @@ export class LibraryManager {
             )
 
         if (launchOptions.memory) {
-            args.push(` -Xmx${launchOptions.memory} -Xms${launchOptions.memory}`)
+            args.push('-Xmx$' + launchOptions.memory, '-Xms' + launchOptions.memory)
         }
 
         const unreplacedVars = args.filter(item => item.match(/\${.*}/))
-        if (unreplacedVars) {
+        if (unreplacedVars.length) {
             throw new Error(`Unreplaced java variable found "${unreplacedVars[0]}"`)
         }
 
@@ -246,21 +246,20 @@ export class LibraryManager {
             
         // Patch missing known arguments
         if (launchOptions.resolution) {
-            args.push(` --width ${launchOptions.resolution.width} --height ${launchOptions.resolution.height}`)
+            args.push('--width', String(launchOptions.resolution.width), '--height', String(launchOptions.resolution.height))
         }
 
         if (launchOptions.server) {
-            args.push(` --server ${launchOptions.server.host} --port ${launchOptions.server.port || 25565}`)
+            args.push('--server', launchOptions.server.host, '--port', String(launchOptions.server.port || 25565))
         }
 
         const unreplacedVars = args.filter(item => item.match(/\${.*}/))
-        if (unreplacedVars) {
+        if (unreplacedVars.length) {
             throw new Error(`Unreplaced game variable found "${unreplacedVars[0]}"`)
         }
 
         return args
     }
-
 }
 
 export declare type MinecraftLibrary = {
