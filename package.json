@@ -1,6 +1,6 @@
 {
   "name": "@eneris/minecraft-client",
-  "version": "3.0.5",
+  "version": "3.1.0",
   "description": "",
   "main": "dist/app.js",
   "types": "dist/app.d.ts",
@@ -36,6 +36,7 @@
     "mz": "^2.7.0",
     "node-fetch": "^2.6.0",
     "typescript": "^3.7.3",
-    "unzipper": "^0.9.15"
+    "unzipper": "^0.9.15",
+    "nbt": "^0.8.1"
   }
 }

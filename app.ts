@@ -9,6 +9,7 @@ import {AssetManager}   from "./utils/Assets";
 
 import {child_process, fs} from 'mz';
 import * as mkdirp from 'mkdirp';
+import * as nbt from 'nbt';
 
 import {Authentication, AuthenticationResult} from "./utils/Authentication";
 import {ForgeVersionDescription, ForgeVersionType} from "./utils/Manifests";
@@ -106,6 +107,64 @@ export class MinecraftClient {
         await this.assetManager.install(this.progress);
     }
 
+    private async loadServersDat(): Promise<ServersDatItem[]> {
+        const serversFilePath = path.join(this.options.gameDir, "servers.dat");
+
+        let serversDat = null;
+
+        try {
+            serversDat = fs.readFileSync(serversFilePath);
+        } catch (err) {
+            return [];
+        }
+
+        const data: ServersDatManifest = await (new Promise((res, rej) => {
+            nbt.parse(serversDat, (err, data) => err ? rej(err) : res(data))
+        }));
+
+        return data.value.servers.value.value;
+    }
+
+    private saveServersDat(serversData: ServersDatItem[]) {
+        const serversFilePath = path.join(this.options.gameDir, "servers.dat");
+        const translatedData = nbt.writeUncompressed({
+            name: "", value: {
+                servers: {
+                    type: "list", value: {
+                        type: "compound", value: serversData
+                    }
+                }
+            }
+        });
+
+        const bufferedData = Buffer.from(translatedData);
+        fs.writeFileSync(serversFilePath, bufferedData);
+    }
+
+    public async ensureServersDat(server: ServerInfo) {
+        const servers: ServersDatItem[] = await this.loadServersDat();
+
+        const preparedServerHost: string = server.host + (server.port ? (':' + server.port) : '');
+        const preparedServer: ServersDatItem = {
+            ip: {
+                type: "string",
+                value: preparedServerHost
+            },
+            name: {
+                type: "string",
+                value: server.name || "Server"
+            }
+        };
+
+        if (!servers.length) {
+            return this.saveServersDat([preparedServer]);
+        }
+
+        if (!servers.find((item: ServersDatItem) => item.ip.value === preparedServerHost)) {
+            return this.saveServersDat([preparedServer, ...servers]);
+        }
+     }
+
     public async checkMods(mods: ForgeMod[], exclusive: boolean): Promise<void> {
         this.progress.step("Installing Mods");
 
@@ -191,4 +250,34 @@ export declare type LaunchOptions = {
         port: number
     },
     memory?: string
+}
+
+export declare type ServerInfo = {
+    host: string,
+    port?: number,
+    name?: string
+}
+
+export type ServersDatItem = {
+    ip: {
+        type: "string",
+        value: string
+    },
+    name: {
+        type: "string",
+        value: string
+    }
+}
+
+export type ServersDatManifest = {
+    name: "",
+    value: {
+        servers: {
+            type: "list",
+            value: {
+                type: "compound",
+                value: ServersDatItem[]
+            }
+        }
+    }
 }
