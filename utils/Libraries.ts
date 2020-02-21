@@ -214,7 +214,7 @@ export class LibraryManager {
             )
 
         if (launchOptions.memory) {
-            args.push('-Xmx$' + launchOptions.memory, '-Xms' + launchOptions.memory)
+            args.push('-Xmx' + launchOptions.memory, '-Xms' + launchOptions.memory)
         }
 
         const unreplacedVars = args.filter(item => item.match(/\${.*}/))
