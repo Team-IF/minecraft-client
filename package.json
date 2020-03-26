@@ -1,17 +1,17 @@
 {
-  "name": "@eneris/minecraft-client",
-  "version": "3.1.1",
+  "name": "@teamif/minecraft-client",
+  "version": "1.0.2",
   "description": "",
   "main": "dist/app.js",
   "types": "dist/app.d.ts",
   "scripts": {
     "compile": "tsc",
     "postinstall": "npm run compile",
-    "prepublish": "rm -rf dist && npm run compile"
+    "prepare": "del /s /q dist && npm run compile"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Eneris/minecraft-client.git"
+    "url": "git+https://github.com/Team-IF/minecraft-client.git"
   },
   "keywords": [
     "minecraft",
@@ -22,9 +22,9 @@
   "author": "fixed_",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/Eneris/minecraft-client/issues"
+    "url": "https://github.com/Team-IF/minecraft-client/issues"
   },
-  "homepage": "https://github.com/Eneris/minecraft-client#readme",
+  "homepage": "https://github.com/Team-IF/minecraft-client#readme",
   "devDependencies": {
     "@types/mz": "0.0.32",
     "@types/node": "^12.12.18",
@@ -38,5 +38,8 @@
     "typescript": "^3.7.3",
     "unzipper": "^0.9.15",
     "nbt": "^0.8.1"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

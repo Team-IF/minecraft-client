@@ -10,13 +10,12 @@ import * as tmp from './TempHelper';
 
 import {Endpoints, Utils} from "./Constants";
 import {
+    Arguments,
     ForgeLibrary,
     ForgeLibraryManifest,
     MinecraftArtifact,
     MinecraftLibraryManifest,
-    Rule,
-    Arguments,
-    ConditionedValue
+    Rule
 } from "./Manifests";
 import {AuthenticationResult} from "./Authentication";
 import {InstallationProgress} from "./InstallationProgress";
@@ -103,7 +102,18 @@ export class LibraryManager {
         progress.call(1);
 
         this.mainClass = data.mainClass;
-        this.arguments = data.arguments;
+        //this.arguments = data.arguments;
+        this.arguments.game = data.minecraftArguments.split(' ');
+        this.arguments.jvm = [
+            "-XX:+UnlockExperimentalVMOptions",
+            "-XX:+UseG1GC",
+            "-XX:G1NewSizePercent=20",
+            "-XX:G1ReservePercent=20",
+            "-XX:MaxGCPauseMillis=50",
+            "-XX:G1HeapRegionSize=16M"];
+        if (process.platform === "darwin") {
+            this.arguments.jvm.push("-XstartOnFirstThread");
+        }
         this.versionType = data.type;
         this.assetIndex = data.assets;
     }
@@ -137,7 +147,7 @@ export class LibraryManager {
 
         let libraries: ForgeLibraryManifest = JSON.parse(data.toString());
 
-        let libs: ForgeLibrary[] = libraries.versionInfo.libraries.filter(value => value.clientreq !== false);;
+        let libs: ForgeLibrary[] = libraries.versionInfo.libraries.filter(value => value.clientreq !== false);
         for(let i = 0; i < libs.length; i++) {
             let lib = libs[i];
             progress.call(i/libs.length);
@@ -211,13 +221,13 @@ export class LibraryManager {
                 .replace("${launcher_name}", "null")
                 .replace("${launcher_version}", "null")
                 .replace("${classpath}", this.getClasspath())
-            )
+            );
 
         if (launchOptions.memory) {
             args.push('-Xmx' + launchOptions.memory, '-Xms' + launchOptions.memory)
         }
 
-        const unreplacedVars = args.filter(item => item.match(/\${.*}/))
+        const unreplacedVars = args.filter(item => item.match(/\${.*}/));
         if (unreplacedVars.length) {
             throw new Error(`Unreplaced java variable found "${unreplacedVars[0]}"`)
         }
@@ -242,7 +252,7 @@ export class LibraryManager {
                 .replace("${user_type}", "mojang")
                 .replace("${version_type}", this.versionType)
                 .replace("${user_properties}", "{}")
-            )
+            );
             
         // Patch missing known arguments
         if (launchOptions.resolution) {
@@ -253,7 +263,7 @@ export class LibraryManager {
             args.push('--server', launchOptions.server.host, '--port', String(launchOptions.server.port || 25565))
         }
 
-        const unreplacedVars = args.filter(item => item.match(/\${.*}/))
+        const unreplacedVars = args.filter(item => item.match(/\${.*}/));
         if (unreplacedVars.length) {
             throw new Error(`Unreplaced game variable found "${unreplacedVars[0]}"`)
         }

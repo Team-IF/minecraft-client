@@ -44,6 +44,7 @@ export declare type Arguments = {
 }
 
 export declare type MinecraftLibraryManifest = {
+    minecraftArguments: string;
     assetIndex: MinecraftArtifact,
     assets: string,
     downloads: {
